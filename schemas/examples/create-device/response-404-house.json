@@ -1,0 +1,7 @@
+{
+  "summary": "Дом не найден",
+  "value": {
+    "code": "HOUSE_NOT_FOUND",
+    "message": "Дом 7 не найден"
+  }
+}

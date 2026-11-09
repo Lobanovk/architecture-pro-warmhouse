@@ -1,0 +1,7 @@
+{
+  "summary": "Ошибка валидации",
+  "value": {
+    "code": "VALIDATION_ERROR",
+    "message": "Поле name обязательно"
+  }
+}

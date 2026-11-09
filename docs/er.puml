@@ -1,0 +1,127 @@
+@startuml
+title WarmHouse ER Diagram
+
+!define TABLE(x) entity x << (T,#FFAAAA) >>
+!define PK(x) <b><color:#b8861b><&key></color></b> x
+!define FK(x) <color:#aaaaaa><&link></color> x
+
+hide methods
+hide stereotypes
+
+package "UserDatabase (Users)" {
+    TABLE(User) {
+        PK(id) : SERIAL
+        --
+        email : VARCHAR(255) UNIQUE NOT NULL
+        password_hash : VARCHAR(255) NOT NULL
+        name : VARCHAR(100)
+        role : VARCHAR(20) NOT NULL
+        created_at : TIMESTAMPTZ
+    }
+}
+
+package "DeviceDatabase (Devices)" {
+    TABLE(House) {
+        PK(id) : SERIAL
+        --
+        FK(owner_id) : INT NOT NULL
+        name : VARCHAR(100)
+        address : TEXT NOT NULL
+        region : VARCHAR(100) NOT NULL
+        created_at : TIMESTAMPTZ
+    }
+
+    TABLE(Room) {
+        PK(id) : SERIAL
+        --
+        FK(house_id) : INT NOT NULL
+        name : VARCHAR(100) NOT NULL
+    }
+
+    TABLE(DeviceType) {
+        PK(id) : SERIAL
+        --
+        name : VARCHAR(100) UNIQUE NOT NULL
+        unit : VARCHAR(20)
+        supported_commands : JSONB NOT NULL
+    }
+
+    TABLE(Device) {
+        PK(id) : SERIAL
+        --
+        FK(house_id) : INT NOT NULL
+        FK(room_id) : INT NULL
+        FK(type_id) : INT NOT NULL
+        serial_number : VARCHAR(100) UNIQUE NOT NULL
+        name : VARCHAR(100) NOT NULL
+        value : FLOAT
+        status : VARCHAR(20) NOT NULL
+        last_updated : TIMESTAMPTZ
+        created_at : TIMESTAMPTZ
+    }
+
+    TABLE(Command) {
+        PK(id) : UUID
+        --
+        FK(device_id) : INT NOT NULL
+        name : VARCHAR(50) NOT NULL
+        params : JSONB
+        status : VARCHAR(20) NOT NULL
+        error : TEXT
+        created_at : TIMESTAMPTZ
+        completed_at : TIMESTAMPTZ
+    }
+
+    TABLE(Scenario) {
+        PK(id) : SERIAL
+        --
+        FK(house_id) : INT NOT NULL
+        name : VARCHAR(100) NOT NULL
+        is_active : BOOLEAN NOT NULL
+        created_at : TIMESTAMPTZ
+    }
+
+    TABLE(ScenarioTrigger) {
+        PK(id) : SERIAL
+        --
+        FK(scenario_id) : INT NOT NULL
+        FK(device_id) : INT NOT NULL
+        operator : VARCHAR(5) NOT NULL
+        value : FLOAT NOT NULL
+    }
+
+    TABLE(ScenarioAction) {
+        PK(id) : SERIAL
+        --
+        FK(scenario_id) : INT NOT NULL
+        FK(device_id) : INT NOT NULL
+        command : VARCHAR(50) NOT NULL
+        params : JSONB
+    }
+}
+
+package "TelemetryDatabase (Telemetry)" {
+    TABLE(Telemetry) {
+        PK(device_id) : INT
+        PK(timestamp) : TIMESTAMPTZ
+        --
+        value : FLOAT NOT NULL
+        unit : VARCHAR(20)
+    }
+}
+
+User ||..o{ House : "владеет"
+Device ||..o{ Telemetry : "показания"
+
+House ||--o{ Room : "состоит из"
+House ||--o{ Device : "содержит"
+Room |o--o{ Device : "расположено в"
+DeviceType ||--o{ Device : "тип"
+Device ||--o{ Command : "получает"
+House ||--o{ Scenario : "сценарии дома"
+Scenario ||--|{ ScenarioTrigger : "условия"
+Scenario ||--|{ ScenarioAction : "действия"
+Device ||--o{ ScenarioTrigger : "отслеживается"
+Device ||--o{ ScenarioAction : "управляется"
+
+@enduml

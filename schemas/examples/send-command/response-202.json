@@ -1,0 +1,13 @@
+{
+  "summary": "Команда принята и отправлена устройству",
+  "value": {
+    "id": "3f1c2a9e-7b4d-4e0a-9c1f-2d8e6b5a4c31",
+    "device_id": 43,
+    "name": "set_temperature",
+    "params": {
+      "temperature": 22
+    },
+    "status": "pending",
+    "created_at": "2026-11-10T12:10:00Z"
+  }
+}

@@ -1,0 +1,3 @@
+type: string
+description: Статус выполнения команды
+enum: [pending, sent, done, failed]

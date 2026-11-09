@@ -1,0 +1,11 @@
+type: object
+description: Тело запроса на отправку команды
+required: [name]
+properties:
+  name:
+    type: string
+    description: Должна входить в supported_commands типа устройства
+  params:
+    type: object
+    additionalProperties: true
+    description: Параметры команды, набор зависит от команды

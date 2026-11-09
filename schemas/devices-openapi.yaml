@@ -1,0 +1,326 @@
+openapi: 3.0.3
+info:
+  title: WarmHouse Devices API
+  version: 1.0.0
+  description: |
+    REST API сервиса управления устройствами (Devices).
+    Вызывается BFF синхронно, когда пользователю нужен немедленный ответ.
+    Все запросы требуют JWT, выданный сервисом пользователей.
+
+    Модели лежат в `models/`, примеры запросов и ответов — в `examples/`.
+
+servers:
+  - url: http://devices:8080/api/v1
+    description: Devices service (внутренняя сеть, вызывается из BFF)
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Devices
+    description: Реестр устройств
+  - name: Commands
+    description: Команды устройствам
+
+paths:
+  /devices/{deviceId}:
+    parameters:
+      - $ref: '#/components/parameters/DeviceId'
+
+    get:
+      tags: [Devices]
+      summary: Получить информацию об устройстве
+      operationId: getDevice
+      responses:
+        '200':
+          description: Устройство найдено
+          content:
+            application/json:
+              schema:
+                $ref: './models/Device.yaml'
+              examples:
+                temperatureSensor:
+                  $ref: './examples/get-device/response-200.json'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/DeviceNotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+    patch:
+      tags: [Devices]
+      summary: Привязать устройство к комнате
+      description: |
+        Меняет комнату устройства. `room_id: null` отвязывает устройство от комнаты
+        (например, уличные ворота). Комната должна принадлежать тому же дому, что и устройство.
+      operationId: updateDeviceRoom
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './models/DeviceRoomUpdate.yaml'
+            examples:
+              bindToRoom:
+                $ref: './examples/update-device-room/request-bind.json'
+              unbind:
+                $ref: './examples/update-device-room/request-unbind.json'
+      responses:
+        '200':
+          description: Устройство обновлено, возвращается его актуальное состояние
+          content:
+            application/json:
+              schema:
+                $ref: './models/Device.yaml'
+              examples:
+                updated:
+                  $ref: './examples/update-device-room/response-200.json'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/DeviceNotFound'
+        '422':
+          description: Комната не существует или принадлежит другому дому
+          content:
+            application/json:
+              schema:
+                $ref: './models/Error.yaml'
+              examples:
+                roomFromAnotherHouse:
+                  $ref: './examples/update-device-room/response-422-another-house.json'
+                roomNotFound:
+                  $ref: './examples/update-device-room/response-422-room-not-found.json'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+    delete:
+      tags: [Devices]
+      summary: Удалить устройство
+      description: |
+        Удаляет устройство из реестра. После удаления сервис публикует событие
+        `devices.deleted` в брокер, по которому Telemetry удаляет историю показаний.
+      operationId: deleteDevice
+      responses:
+        '204':
+          description: Устройство удалено, тело ответа пустое
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/DeviceNotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /houses/{houseId}/devices:
+    parameters:
+      - name: houseId
+        in: path
+        required: true
+        description: ID дома
+        schema:
+          type: integer
+          example: 7
+
+    post:
+      tags: [Devices]
+      summary: Добавить устройство в дом
+      description: |
+        Регистрирует устройство по серийному номеру. Устройство создаётся со статусом
+        `pending_connection` и становится `active`, когда само подключится к платформе.
+      operationId: createDevice
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './models/DeviceCreate.yaml'
+            examples:
+              relay:
+                $ref: './examples/create-device/request-relay.json'
+              gate:
+                $ref: './examples/create-device/request-gate.json'
+      responses:
+        '201':
+          description: Устройство создано
+          headers:
+            Location:
+              description: URL созданного устройства
+              schema:
+                type: string
+                example: /api/v1/devices/43
+          content:
+            application/json:
+              schema:
+                $ref: './models/Device.yaml'
+              examples:
+                created:
+                  $ref: './examples/create-device/response-201.json'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Дом не найден
+          content:
+            application/json:
+              schema:
+                $ref: './models/Error.yaml'
+              examples:
+                houseNotFound:
+                  $ref: './examples/create-device/response-404-house.json'
+        '409':
+          description: Устройство с таким серийным номером уже зарегистрировано
+          content:
+            application/json:
+              schema:
+                $ref: './models/Error.yaml'
+              examples:
+                duplicateSerial:
+                  $ref: './examples/create-device/response-409-duplicate.json'
+        '422':
+          description: Указан несуществующий тип устройства или комната из другого дома
+          content:
+            application/json:
+              schema:
+                $ref: './models/Error.yaml'
+              examples:
+                unknownType:
+                  $ref: './examples/create-device/response-422-unknown-type.json'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /devices/{deviceId}/commands:
+    parameters:
+      - $ref: '#/components/parameters/DeviceId'
+
+    post:
+      tags: [Commands]
+      summary: Отправить команду устройству
+      description: |
+        Команда проверяется по списку поддерживаемых команд типа устройства, сохраняется
+        со статусом `pending` и отправляется устройству через брокер. Ответ приходит сразу,
+        не дожидаясь выполнения. Результат выполнения публикуется асинхронно (см. AsyncAPI).
+      operationId: sendCommand
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './models/CommandCreate.yaml'
+            examples:
+              turnOn:
+                $ref: './examples/send-command/request-turn-on.json'
+              setTemperature:
+                $ref: './examples/send-command/request-set-temperature.json'
+      responses:
+        '202':
+          description: Команда принята и отправлена устройству, выполнение ещё не завершено
+          content:
+            application/json:
+              schema:
+                $ref: './models/Command.yaml'
+              examples:
+                accepted:
+                  $ref: './examples/send-command/response-202.json'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/DeviceNotFound'
+        '409':
+          description: Устройство не в сети, команда не отправлена
+          content:
+            application/json:
+              schema:
+                $ref: './models/Error.yaml'
+              examples:
+                offline:
+                  $ref: './examples/send-command/response-409-offline.json'
+        '422':
+          description: Тип устройства не поддерживает команду или параметры некорректны
+          content:
+            application/json:
+              schema:
+                $ref: './models/Error.yaml'
+              examples:
+                unsupported:
+                  $ref: './examples/send-command/response-422-unsupported.json'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    DeviceId:
+      name: deviceId
+      in: path
+      required: true
+      description: ID устройства
+      schema:
+        type: integer
+        example: 42
+
+  responses:
+    BadRequest:
+      description: Некорректное тело запроса (нет обязательных полей, неверные типы)
+      content:
+        application/json:
+          schema:
+            $ref: './models/Error.yaml'
+          examples:
+            validation:
+              $ref: './examples/common/error-400.json'
+    Unauthorized:
+      description: JWT отсутствует или невалиден
+      content:
+        application/json:
+          schema:
+            $ref: './models/Error.yaml'
+          examples:
+            noToken:
+              $ref: './examples/common/error-401.json'
+    Forbidden:
+      description: Ресурс принадлежит дому другого пользователя
+      content:
+        application/json:
+          schema:
+            $ref: './models/Error.yaml'
+          examples:
+            foreignHouse:
+              $ref: './examples/common/error-403.json'
+    DeviceNotFound:
+      description: Устройство не найдено
+      content:
+        application/json:
+          schema:
+            $ref: './models/Error.yaml'
+          examples:
+            notFound:
+              $ref: './examples/common/error-404-device.json'
+    InternalError:
+      description: Внутренняя ошибка сервера
+      content:
+        application/json:
+          schema:
+            $ref: './models/Error.yaml'
+          examples:
+            internal:
+              $ref: './examples/common/error-500.json'

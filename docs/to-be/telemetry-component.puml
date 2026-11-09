@@ -1,0 +1,33 @@
+@startuml
+title WarmHouse Telemetry Component Diagram
+
+top to bottom direction
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+Container_Boundary(WarmHouse, "Теплый дом") {
+    Container(bff, "BFF", "NodeJs, TypeScript", "Слой BFF для общения с сервисами")
+    ContainerQueue(broker, "Message Broker", "MQTT / Kafka", "Доставка телеметрии, команд и событий между сервисами")
+    Container(telemetry_svc, "Telemetry", "Node.js, TypeScript", "Приём, хранение и выдача телеметрии")
+    ContainerDb(telemetry_database, "TelemetryDatabase", "PostgreSQL", "Хранит телеметрию")
+}
+
+Container(telemetry_svc, "Telemetry", "Node.js, TypeScript") {
+    Component(broker_client, "BrokerClient", "Подписывается на топики телеметрии, публикует события о новых показаниях")
+    Component(rest_api, "RestApi", "Отдаёт BFF историю и последние показания устройств")
+    Component(telemetry_service, "TelemetryService", "Проверяет и нормализует показания, сохраняет их, агрегирует историю для графиков")
+    Component(repository, "Repository", "Чтение и запись показаний в БД")
+}
+
+Rel(bff, rest_api, "Запрашивает историю и последние показания")
+Rel(rest_api, telemetry_service, "Получение показаний за период и последних значений")
+
+Rel(broker, broker_client, "Показания устройств")
+Rel(broker_client, telemetry_service, "Передаёт полученные показания на обработку")
+Rel(telemetry_service, broker_client, "Событие о новом показании")
+Rel(broker_client, broker, "Публикует событие о новом показании (для BFF и сценариев Devices)")
+
+Rel(telemetry_service, repository, "Сохранение и выборка показаний")
+Rel(repository, telemetry_database, "Запись/чтение данных")
+
+@enduml

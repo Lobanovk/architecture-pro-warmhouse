@@ -1,0 +1,30 @@
+type: object
+description: Устройство в доме пользователя
+required: [id, house_id, type_id, serial_number, name, status, created_at]
+properties:
+  id:
+    type: integer
+  house_id:
+    type: integer
+  room_id:
+    type: integer
+    nullable: true
+    description: null, если устройство не привязано к комнате
+  type_id:
+    type: integer
+  serial_number:
+    type: string
+  name:
+    type: string
+  value:
+    type: number
+    format: double
+    description: Последнее известное значение
+  status:
+    $ref: './DeviceStatus.yaml'
+  last_updated:
+    type: string
+    format: date-time
+  created_at:
+    type: string
+    format: date-time

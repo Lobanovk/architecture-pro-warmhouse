@@ -1,0 +1,15 @@
+type: object
+description: Тело запроса на добавление устройства
+required: [name, type_id, serial_number]
+properties:
+  name:
+    type: string
+    maxLength: 100
+  type_id:
+    type: integer
+  serial_number:
+    type: string
+    maxLength: 100
+  room_id:
+    type: integer
+    nullable: true

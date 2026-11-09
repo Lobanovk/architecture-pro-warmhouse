@@ -1,0 +1,7 @@
+{
+  "summary": "Устройство не найдено",
+  "value": {
+    "code": "DEVICE_NOT_FOUND",
+    "message": "Устройство 42 не найдено"
+  }
+}
