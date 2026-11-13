@@ -1,0 +1,8 @@
+type: object
+description: Тело запроса на привязку устройства к комнате
+required: [room_id]
+properties:
+  room_id:
+    type: integer
+    nullable: true
+    description: null отвязывает устройство от комнаты

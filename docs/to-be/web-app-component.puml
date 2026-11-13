@@ -1,0 +1,25 @@
+@startuml
+title WarmHouse WebApp Component Diagram
+
+top to bottom direction
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+Container_Boundary(WarmHouse, "Теплый дом") {
+    Container(web_app, "WebApp", "React, TypeScript", "Веб-приложение удаленного взаимодействия с устройствами")
+    Container(bff, "BFF", "NodeJs, TypeScript", "Слой BFF для общения с сервисами")
+}
+
+Container(web_app, "WebApp", "React, TypeScript") {
+    Component(ui, "UI", "Отображение UI страниц")
+    Component(api_сlient, "ApiClient", "Клиент для работы с BFF")
+    Component(websocket_client, "WebSocketClient", "Клиент для работы с WebSocket")
+}
+
+Rel(ui, api_client, "Отображение данных/работа с данными")
+Rel(ui, websocket_client, "Отобрадение данных с WebSocket")
+
+Rel(api_client, bff, "Отправка/получение данных")
+Rel(bff,websocket_client, "События: телеметрия, состояние устройств, результат команд")
+
+@enduml

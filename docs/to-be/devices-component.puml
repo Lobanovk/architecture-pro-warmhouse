@@ -1,0 +1,47 @@
+@startuml
+title WarmHouse Devices Component Diagram
+
+top to bottom direction
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+Container_Boundary(WarmHouse, "Теплый дом") {
+    Container(bff, "BFF", "NodeJs, TypeScript", "Слой BFF для общения с сервисами")
+    Container(devices_svc, "Devices", "Python, FastAPI", "Реест устройств, их управление и работа с пользовательскими сценариями")
+    ContainerQueue(broker, "Message Broker", "MQTT / Kafka", "Доставка телеметрии, команд и событий между сервисами")
+    ContainerDb(device_database, "DeviceDatabase", "PostgreSQL", "Хранит устройства, сценарии")
+}
+
+Container(devices_svc, "Devices", "Python, FastAPI") {
+    Component(rest_api, "RestApi", "Слой RestAPI для работы с BFF")
+    Component(registry_dvsc, "Реестр устройств")
+    Component(registry_type_dvcs, "Реестр типов устройств")
+    Component(command_svc, "Сервис команд")
+    Component(scenario_svc, "Сервис сценариев")
+    Component(prorocol_svc, "Адаптеры протоколов")
+    Component(repository, "Репозиторий для работы с БД")
+}
+
+Rel(bff, rest_api, "Устройства, команды, сценарии")
+
+Rel(rest_api, registry_dvsc, "Подключение и просмотр устройств")
+Rel(rest_api, command_svc, "Команды пользователя")
+Rel(rest_api, scenario_svc, "Создание и редактирование сценариев")
+
+Rel(command_svc, registry_type_dvcs, "Проверяет, что тип устройства поддерживает команду")
+Rel(command_svc, prorocol_svc, "Передаёт команду для отправки")
+Rel(command_svc, repository, "Сохраняет статус команды")
+Rel(command_svc, broker, "Публикует результат команды")
+
+Rel(scenario_svc, command_svc, "Отправляет команды при срабатывание")
+Rel(scenario_svc, repository, "Запись/чтение данных")
+Rel(broker, scenario_svc, "События телеметрии")
+
+BiRel(prorocol_svc, broker, "Команды устройствам / состояние устройств")
+Rel(prorocol_svc, registry_type_dvcs, "Определяет протокол по типу устройства")
+Rel(prorocol_svc, registry_dvsc, "Обновляет состояние устройства")
+
+Rel(registry_dvsc, repository, "Запись/чтение данных")
+Rel(registry_type_dvcs, repository, "Запись/чтение данных")
+Rel(repository, device_database, "Запись/чтение данных")
+@enduml

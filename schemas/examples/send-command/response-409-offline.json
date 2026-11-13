@@ -1,0 +1,7 @@
+{
+  "summary": "Устройство не в сети",
+  "value": {
+    "code": "DEVICE_OFFLINE",
+    "message": "Устройство 43 не в сети"
+  }
+}

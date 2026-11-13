@@ -1,0 +1,47 @@
+@startuml
+title WarmHouse Container Diagram
+
+top to bottom direction
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+Person(user, "Пользователь", "Самостоятельно подключает устройства, управляет ими, настраивает сценарии, смотрит телеметрию и видео")
+Person(admin, "Администратор", "Смотрит статистику по подключенным домам, управляет пользователями")
+System(WarmHouse, "Теплый дом", "SaaS-платформа управления умным домом")
+System_Ext(devices, "Умные устройства партнеров", "Датчики, реле, освещение, ворота, камеры. Подключаются по стандартным протоколам")
+
+Container_Boundary(WarmHouse, "Теплый дом") {
+    Container(web_app, "WebApp", "React, TypeScript", "Веб-приложение удаленного взаимодействия с устройствами")
+    Container(bff, "BFF", "NodeJs, TypeScript", "Слой BFF для общения с сервисами")
+    Container(user_svc, "UserServices", "NodeJs, TypeScript", "Логин/регистрация пользователя")
+    Container(devices_svc, "Devices", "Python, FastAPI", "Реестр устройств, их управление и работа с пользовательскими сценариями")
+    ContainerQueue(broker, "Message Broker", "MQTT / Kafka", "Доставка телеметрии, команд и событий между сервисами")
+    Container(telemetry_svc, "Telemetry", "Node.js, TypeScript", "Приём, хранение и выдача телеметрии")
+
+    ContainerDb(user_database, "UserDatabase", "PostgreSQL", "Хранит пользователей")
+    ContainerDb(device_database, "DeviceDatabase", "PostgreSQL", "Хранит устройства, сценарии")
+    ContainerDb(telemetry_database, "TelemetryDatabase", "PostgreSQL", "Хранит телеметрию")
+}
+
+
+Rel(admin, web_app, "Логин/Регистрация. Смотрит статистику по подключенным домам, управляет пользователями", "HTTPS")
+Rel(user, web_app, "Логин/Регистрация. Подключает устройства, управляет ими, настраивает сценарии, смотрит телеметрию", "HTTPS")
+Rel(web_app, bff, "Логин/Регистрация. Подключает устройства, управляет ими, настраивает сценарии", "HTTPS + JWT")
+
+Rel(bff, user_svc, "Логин, регистрация (выдача JWT), управление пользователями", "REST")
+Rel(bff, web_app, "События: телеметрия, состояние устройств, результат команд", "WebSocket")
+Rel(bff, devices_svc, "Устройства, команды, сценарии", "REST")
+Rel(bff, telemetry_svc, "История и показания", "REST")
+Rel(bff, broker, "Подписывается на события для пользователя", "Kafka")
+
+Rel(devices, broker, "Отправка телеметрии и состояния, подписка на команды", "MQTT")
+
+BiRel(devices_svc, broker, "Отправка команд устройствам, Получение состояния устройств и телеметрии. Публикует события: результат команды, смена состояния", "MQTT")
+BiRel(telemetry_svc, broker, "Получает телеметрию от устройств, публикует события новых показаний", "MQTT / Kafka")
+
+BiRel(user_svc, user_database, "Чтение/запись данных", "SQL")
+BiRel(devices_svc, device_database, "Чтение/запись данных", "SQL")
+BiRel(telemetry_svc, telemetry_database, "Чтение/запись данных", "SQL")
+
+
+@enduml

@@ -1,0 +1,10 @@
+type: object
+description: Ошибка
+required: [code, message]
+properties:
+  code:
+    type: string
+    description: Машиночитаемый код ошибки
+  message:
+    type: string
+    description: Описание для человека

@@ -1,0 +1,9 @@
+{
+  "summary": "Установить температуру",
+  "value": {
+    "name": "set_temperature",
+    "params": {
+      "temperature": 22
+    }
+  }
+}

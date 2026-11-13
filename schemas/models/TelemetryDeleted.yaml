@@ -1,0 +1,11 @@
+type: object
+description: Событие сервиса Devices — устройство удалено
+required: [device_id, timestamp]
+properties:
+  device_id:
+    type: integer
+    description: Идентификатор удалённого устройства
+  timestamp:
+    type: string
+    format: date-time
+    description: Время удаления устройства

@@ -1,0 +1,132 @@
+@startuml
+title WarmHouse Devices Code Diagram (Python, FastAPI — MVP)
+
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+hide empty members
+set separator none
+
+package "main.py (RestApi, FastAPI)" {
+    class main <<module>> {
+        DATABASE_URL: str
+        MQTT_URL: str
+        app: FastAPI
+        lifespan(app: FastAPI)
+        get_repo(request: Request) -> DeviceRepository
+        get_publisher(request: Request) -> CommandPublisher
+        .. роуты /api/v2 ..
+        create_device(house_id: int, data: DeviceCreate) -> Device  <<POST /houses/{house_id}/devices, 201>>
+        get_device(device_id: int) -> Device  <<GET /devices/{device_id}>>
+        update_device_room(device_id: int, data: DeviceRoomUpdate) -> Device  <<PATCH /devices/{device_id}>>
+        delete_device(device_id: int)  <<DELETE /devices/{device_id}, 204>>
+        send_command(device_id: int, data: CommandCreate) -> Command  <<POST /devices/{device_id}/commands, 202>>
+    }
+}
+
+
+package "repository.py (Репозиторий)" {
+    class DeviceRepository {
+        - _pool: ConnectionPool
+        + __init__(dsn: str)
+        + init_schema() -> None
+        + close() -> None
+        + create(house_id: int, data: DeviceCreate) -> Device
+        + get(device_id: int) -> Device | None
+        + update_room(device_id: int, room_id: int | None) -> Device | None
+        + delete(device_id: int) -> bool
+    }
+}
+
+
+package "broker.py (Отправка команд)" {
+    class CommandPublisher {
+        - _client: mqtt.Client
+        + __init__(mqtt_url: str)
+        + close() -> None
+        + publish(command: Command) -> bool
+    }
+    note right of CommandPublisher
+        MQTT topic: devices/{device_id}/commands
+        QoS 1, payload — Command в JSON
+    end note
+}
+
+
+package "models.py (Pydantic)" {
+    enum DeviceStatus <<str, Enum>> {
+        PENDING_CONNECTION = "pending_connection"
+        ACTIVE = "active"
+        INACTIVE = "inactive"
+    }
+
+    enum CommandStatus <<str, Enum>> {
+        PENDING = "pending"
+        SENT = "sent"
+        DONE = "done"
+        FAILED = "failed"
+    }
+
+    class DeviceCreate <<BaseModel>> {
+        name: str [max 100]
+        type_id: int
+        serial_number: str [max 100]
+        room_id: int | None = None
+    }
+
+    class DeviceRoomUpdate <<BaseModel>> {
+        room_id: int | None
+    }
+
+    class Device <<BaseModel>> {
+        id: int
+        house_id: int
+        room_id: int | None
+        type_id: int
+        serial_number: str
+        name: str
+        value: float | None
+        status: DeviceStatus
+        last_updated: datetime | None
+        created_at: datetime
+    }
+
+    class CommandCreate <<BaseModel>> {
+        name: str
+        params: dict[str, Any] = {}
+    }
+
+    class Command <<BaseModel>> {
+        id: UUID
+        device_id: int
+        name: str
+        params: dict[str, Any]
+        status: CommandStatus
+        created_at: datetime
+    }
+}
+
+
+package "Внешние библиотеки" {
+    class ConnectionPool <<psycopg_pool>>
+    class "mqtt.Client" as MqttClient <<paho-mqtt>>
+}
+
+
+main --> DeviceRepository : Depends(get_repo)
+main --> CommandPublisher : Depends(get_publisher)
+main ..> DeviceCreate
+main ..> DeviceRoomUpdate
+main ..> CommandCreate
+main ..> Command : создаёт (uuid4, status)
+
+DeviceRepository *-- ConnectionPool
+DeviceRepository ..> Device : возвращает
+DeviceRepository ..> DeviceCreate
+
+CommandPublisher *-- MqttClient
+CommandPublisher ..> Command : публикует
+
+Device --> DeviceStatus
+Command --> CommandStatus
+
+@enduml

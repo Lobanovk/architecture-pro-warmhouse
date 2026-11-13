@@ -1,0 +1,7 @@
+{
+  "summary": "Комната не найдена",
+  "value": {
+    "code": "ROOM_NOT_FOUND",
+    "message": "Комната 99 не найдена"
+  }
+}

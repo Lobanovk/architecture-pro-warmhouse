@@ -1,0 +1,2 @@
+CREATE DATABASE devices;
+CREATE DATABASE telemetry;

@@ -1,0 +1,109 @@
+asyncapi: 3.0.0
+info:
+  title: Telemetry Service Async API
+  version: 1.0.0
+  description: Асинхронный API сервиса Telemetry — обмен сообщениями через Message Broker
+
+channels:
+  deviceTelemetry:
+    address: devices/{deviceId}/telemetry
+    description: Показания конкретного устройства
+    parameters:
+      deviceId:
+        description: Идентификатор устройства
+        examples: ['42']
+    messages:
+      telemetryReading:
+        $ref: '#/components/messages/TelemetryReading'
+
+  telemetryReceived:
+    address: telemetry.received
+    description: Новое показание сохранено — для BFF (обновление UI) и сценариев Devices
+    messages:
+      telemetryReceived:
+        $ref: '#/components/messages/TelemetryReceived'
+  
+  telemetryDeleted:
+    address: telemetry.deleted
+    description: Devices сообщает «устройство удалено»
+    messages:
+      telemetryDeleted:
+        $ref: '#/components/messages/TelemetryDeleted'
+
+
+operations:
+  receiveTelemetry:
+    action: receive
+    channel:
+      $ref: '#/channels/deviceTelemetry'
+    summary: Получить показание от устройства и сохранить его
+    messages:
+      - $ref: '#/channels/deviceTelemetry/messages/telemetryReading'
+
+  sendTelemetryReceived:
+    action: send
+    channel:
+      $ref: '#/channels/telemetryReceived'
+    summary: Сообщить подписчикам о новом сохранённом показании
+    messages:
+      - $ref: '#/channels/telemetryReceived/messages/telemetryReceived'
+
+  deleteTelemetry:
+    action: receive
+    channel:
+      $ref: '#/channels/telemetryDeleted'
+    summary: Получить событие об удалении устройства и удалить всю его историю показаний
+    messages:
+      - $ref: '#/channels/telemetryDeleted/messages/telemetryDeleted'
+
+
+components:
+  messages:
+    TelemetryReading:
+      name: TelemetryReading
+      title: Показание устройства
+      contentType: application/json
+      payload:
+        $ref: './models/TelemetryReading.yaml'
+      examples:
+        - name: temperature
+          summary: Температура в гостиной
+          payload:
+            device_id: 42
+            value: 21.5
+            unit: '°C'
+            timestamp: '2026-11-10T12:00:00Z'
+
+    TelemetryReceived:
+      name: TelemetryReceived
+      title: Новое показание сохранено
+      contentType: application/json
+      payload:
+        $ref: './models/TelemetryReceived.yaml'
+      examples:
+        - name: batch
+          summary: Сохранены показания двух датчиков
+          payload:
+            timestamp: '2026-11-10T12:00:05Z'
+            readings:
+              - device_id: 42
+                value: 21.5
+                unit: '°C'
+                timestamp: '2026-11-10T12:00:00Z'
+              - device_id: 43
+                value: 45
+                unit: '%'
+                timestamp: '2026-11-10T12:00:02Z'
+      
+    TelemetryDeleted:
+      name: TelemetryDeleted
+      title: Устройство удалено
+      contentType: application/json
+      payload:
+        $ref: './models/TelemetryDeleted.yaml'
+      examples:
+        - name: deleted
+          summary: Устройство 42 удалено в Devices
+          payload: 
+            device_id: 42
+            timestamp: '2026-11-10T12:00:00Z'

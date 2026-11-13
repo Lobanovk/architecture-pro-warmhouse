@@ -1,0 +1,17 @@
+type: object
+description: Показание, которое датчик присылает в брокер
+required: [device_id, value, timestamp]
+properties:
+  device_id:
+    type: integer
+    description: Дублирует deviceId из адреса канала
+  value:
+    type: number
+    format: double
+  unit:
+    type: string
+    description: Единица измерения (если не передана — берётся из типа устройства)
+  timestamp:
+    type: string
+    format: date-time
+    description: Время замера на устройстве

@@ -1,0 +1,25 @@
+{
+  "name": "telemetry",
+  "version": "1.0.0",
+  "private": true,
+  "description": "WarmHouse Telemetry service: receives device readings via MQTT, stores and serves them over REST",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/main.js",
+    "dev": "tsx watch src/main.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "express": "5.3.0",
+    "mqtt": "5.16.1",
+    "pg": "8.23.1"
+  },
+  "devDependencies": {
+    "@types/express": "5.0.6",
+    "@types/node": "22.20.5",
+    "@types/pg": "8.23.1",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3"
+  }
+}

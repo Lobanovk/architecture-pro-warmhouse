@@ -1,0 +1,3 @@
+type: string
+description: Статус подключения устройства
+enum: [pending_connection, active, inactive]

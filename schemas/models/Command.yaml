@@ -1,0 +1,19 @@
+type: object
+description: Команда устройству
+required: [id, device_id, name, status, created_at]
+properties:
+  id:
+    type: string
+    format: uuid
+  device_id:
+    type: integer
+  name:
+    type: string
+  params:
+    type: object
+    additionalProperties: true
+  status:
+    $ref: './CommandStatus.yaml'
+  created_at:
+    type: string
+    format: date-time

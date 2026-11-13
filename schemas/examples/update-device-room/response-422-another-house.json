@@ -1,0 +1,7 @@
+{
+  "summary": "Комната из другого дома",
+  "value": {
+    "code": "ROOM_FROM_ANOTHER_HOUSE",
+    "message": "Комната 5 не принадлежит дому 7"
+  }
+}
